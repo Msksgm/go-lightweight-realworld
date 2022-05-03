@@ -6,3 +6,5 @@ require (
 	github.com/google/go-cmp v0.5.8
 	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 )
+
+require github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
