@@ -47,7 +47,7 @@ func (ur *UserRepository) SaveUser(ctx context.Context, user *model.User) (err e
 	query := `
 		INSERT INTO users (email, username, password) VALUES ($1, $2, $3)
 	`
-	_, err = tx.Exec(query, user.Email, user.UserName, user.PasswordHash)
+	_, err = tx.ExecContext(ctx, query, user.Email, user.UserName, user.PasswordHash)
 	if err != nil {
 		return &SaveUserQueryError{User: user, Message: fmt.Sprintf("userrepository.SaveUser err: %s", err), Err: err}
 	}
