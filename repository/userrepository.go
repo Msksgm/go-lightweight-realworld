@@ -11,7 +11,7 @@ import (
 type UserRepositorier interface {
 	SaveUser(context.Context, *model.User) error
 	FindUserByUserName(context.Context, string) (*model.User, error)
-	FindUserByUserEmail(context.Context, string) (*model.User, error)
+	FindUserByEmail(context.Context, string) (*model.User, error)
 }
 
 type UserRepository struct {
