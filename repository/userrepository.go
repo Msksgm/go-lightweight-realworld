@@ -56,7 +56,7 @@ func (ur *UserRepository) SaveUser(ctx context.Context, user *model.User) (err e
 	return nil
 }
 
-func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName string) (_ *model.User, err error) {
+func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName string) (user *model.User, err error) {
 	tx, err := ur.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -73,21 +73,28 @@ func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName strin
 	query := `
 		SELECT id, email, username, password FROM users WHERE username = $1
 	`
-	row := tx.QueryRowContext(ctx, query, userName)
+	rows, err := tx.QueryContext(ctx, query, userName)
 	if err != nil {
 		return nil, err
 	}
 
 	var u model.User
-	err = row.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+	for rows.Next() {
+		err = rows.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+		if err != nil {
+			return nil, err
+		}
+		user = &u
+	}
+	err = rows.Err()
 	if err != nil {
 		return nil, err
 	}
 
-	return &u, nil
+	return user, nil
 }
 
-func (ur *UserRepository) FindUserByEmail(ctx context.Context, email string) (_ *model.User, err error) {
+func (ur *UserRepository) FindUserByEmail(ctx context.Context, email string) (user *model.User, err error) {
 	tx, err := ur.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -104,16 +111,24 @@ func (ur *UserRepository) FindUserByEmail(ctx context.Context, email string) (_ 
 	query := `
 		SELECT id, email, username, password FROM users WHERE email = $1
 	`
-	row := tx.QueryRowContext(ctx, query, email)
+	rows, err := tx.QueryContext(ctx, query, email)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var u model.User
-	err = row.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+	for rows.Next() {
+		err = rows.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+		if err != nil {
+			return nil, err
+		}
+		user = &u
+	}
+	err = rows.Err()
 	if err != nil {
 		return nil, err
 	}
 
-	return &u, nil
+	return user, nil
 }

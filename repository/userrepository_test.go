@@ -130,7 +130,7 @@ func TestFindUserByUserName(t *testing.T) {
 				return mock{db, m}
 			}(),
 			want:    nil,
-			hasErr:  true,
+			hasErr:  false,
 			wantErr: nil,
 		},
 	}
@@ -202,7 +202,7 @@ func TestFindUserByEmail(t *testing.T) {
 				return mock{db, m}
 			}(),
 			want:    nil,
-			hasErr:  true,
+			hasErr:  false,
 			wantErr: nil,
 		},
 	}
