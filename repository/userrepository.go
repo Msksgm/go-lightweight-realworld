@@ -11,6 +11,7 @@ import (
 type UserRepositorier interface {
 	SaveUser(context.Context, *model.User) error
 	FindUserByUserName(context.Context, string) (*model.User, error)
+	FindUserByUserEmail(context.Context, string) (*model.User, error)
 }
 
 type UserRepository struct {
@@ -73,6 +74,37 @@ func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName strin
 		SELECT id, email, username, password FROM users WHERE username = $1
 	`
 	row := tx.QueryRowContext(ctx, query, userName)
+	if err != nil {
+		return nil, err
+	}
+
+	var u model.User
+	err = row.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+func (ur *UserRepository) FindUserByEmail(ctx context.Context, email string) (_ *model.User, err error) {
+	tx, err := ur.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	query := `
+		SELECT id, email, username, password FROM users WHERE email = $1
+	`
+	row := tx.QueryRowContext(ctx, query, email)
 	if err != nil {
 		return nil, err
 	}

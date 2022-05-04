@@ -151,3 +151,75 @@ func TestFindUserByUserName(t *testing.T) {
 		})
 	}
 }
+
+func TestFindUserByEmail(t *testing.T) {
+	type mock struct {
+		db      *sql.DB
+		sqlmock sqlmock.Sqlmock
+	}
+	tests := []struct {
+		name    string
+		email   string
+		mock    mock
+		want    *model.User
+		hasErr  bool
+		wantErr error
+	}{
+		{
+			name:  "found",
+			email: "test@example.com",
+			mock: func() mock {
+				db, m, err := sqlmock.New()
+				if err != nil {
+					t.Fatal(err)
+				}
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, email, username, password FROM users WHERE email = $1`)).
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password"}).
+						AddRow("0", "test@example.com", "test-user", "password"),
+					)
+				m.ExpectCommit()
+				return mock{db, m}
+			}(),
+			want:    &model.User{Email: "test@example.com", UserName: "test-user", PasswordHash: "password"},
+			hasErr:  false,
+			wantErr: nil,
+		},
+		{
+			name:  "not found",
+			email: "test@example.com",
+			mock: func() mock {
+				db, m, err := sqlmock.New()
+				if err != nil {
+					t.Fatal(err)
+				}
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, email, username, password FROM users WHERE email = $1`)).
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{}))
+				m.ExpectCommit()
+				return mock{db, m}
+			}(),
+			want:    nil,
+			hasErr:  true,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := tt.mock.db
+			userRepository, err := NewUserRepository(db)
+			if err != nil {
+				t.Error(err)
+			}
+			got, err := userRepository.FindUserByEmail(context.Background(), tt.email)
+			if (err != nil) != tt.hasErr {
+				t.Errorf("err type: %v, expect err type: %v", reflect.TypeOf(err), reflect.TypeOf(tt.wantErr))
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
