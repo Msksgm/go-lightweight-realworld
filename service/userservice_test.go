@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Msksgm/go-lightweight-realworld.git/mock"
-	"github.com/Msksgm/go-lightweight-realworld.git/model"
+	"github.com/msksgm/go-lightweight-realworld/mock"
+	"github.com/msksgm/go-lightweight-realworld/model"
 )
 
 func TestRegisterUser(t *testing.T) {

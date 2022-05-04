@@ -3,7 +3,7 @@ package mock
 import (
 	"context"
 
-	"github.com/Msksgm/go-lightweight-realworld.git/model"
+	"github.com/msksgm/go-lightweight-realworld/model"
 )
 
 type UserRepositoryStub struct {

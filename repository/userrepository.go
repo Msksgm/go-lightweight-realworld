@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/Msksgm/go-lightweight-realworld.git/model"
+	"github.com/msksgm/go-lightweight-realworld/model"
 )
 
 type UserRepositorier interface {

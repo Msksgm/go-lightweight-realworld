@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Msksgm/go-lightweight-realworld.git/model"
-	"github.com/Msksgm/go-lightweight-realworld.git/repository"
+	"github.com/msksgm/go-lightweight-realworld/model"
+	"github.com/msksgm/go-lightweight-realworld/repository"
 )
 
 type UserService struct {

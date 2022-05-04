@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Msksgm/go-lightweight-realworld.git/model"
+	"github.com/msksgm/go-lightweight-realworld/model"
 )
 
 func TestSaveUser(t *testing.T) {
