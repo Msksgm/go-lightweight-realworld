@@ -10,8 +10,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Msksgm/go-lightweight-realworld.git/model"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestSaveUser(t *testing.T) {
@@ -131,8 +129,8 @@ func TestFindUserByUserName(t *testing.T) {
 				m.ExpectCommit()
 				return mock{db, m}
 			}(),
-			want:    &model.User{},
-			hasErr:  false,
+			want:    nil,
+			hasErr:  true,
 			wantErr: nil,
 		},
 	}
@@ -144,11 +142,11 @@ func TestFindUserByUserName(t *testing.T) {
 				t.Error(err)
 			}
 			got, err := userRepository.FindUserByUserName(context.Background(), tt.userName)
-			if errors.As(err, &tt.wantErr) {
-				t.Errorf("err type: %v, expect err type: %v", reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if (err != nil) != tt.hasErr {
+				t.Errorf("err type: %v, expect err type: %v", reflect.TypeOf(err), reflect.TypeOf(tt.wantErr))
 			}
-			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(*got, "PasswordHash", "CreatedAt", "UpdatedAt")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %v, want %v", got, tt.want)
 			}
 		})
 	}

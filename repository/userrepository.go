@@ -72,18 +72,15 @@ func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName strin
 	query := `
 		SELECT id, email, username, password FROM users WHERE username = $1
 	`
-	rows, err := tx.QueryContext(ctx, query, userName)
+	row := tx.QueryRowContext(ctx, query, userName)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var u model.User
-	for rows.Next() {
-		err = rows.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
-		if err != nil {
-			return nil, err
-		}
+	err = row.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+	if err != nil {
+		return nil, err
 	}
 
 	return &u, nil
