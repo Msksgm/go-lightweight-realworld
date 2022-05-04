@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Msksgm/go-lightweight-realworld.git/model"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestSaveUser(t *testing.T) {
@@ -26,7 +29,7 @@ func TestSaveUser(t *testing.T) {
 	}{
 		{
 			name: "success",
-			user: &model.User{Email: "test@examle.com", UserName: "test-user", PasswordHash: "password"},
+			user: &model.User{Email: "test@example.com", UserName: "test-user", PasswordHash: "password"},
 			mock: func() mock {
 				db, m, err := sqlmock.New()
 				if err != nil {
@@ -34,7 +37,7 @@ func TestSaveUser(t *testing.T) {
 				}
 				m.ExpectBegin()
 				m.ExpectExec("INSERT INTO users").
-					WithArgs("test@examle.com", "test-user", "password").
+					WithArgs("test@example.com", "test-user", "password").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				m.ExpectCommit()
 				return mock{db, m}
@@ -44,7 +47,7 @@ func TestSaveUser(t *testing.T) {
 		},
 		{
 			name: "fail",
-			user: &model.User{Email: "test@examle.com", UserName: "test-user", PasswordHash: "password"},
+			user: &model.User{Email: "test@example.com", UserName: "test-user", PasswordHash: "password"},
 			mock: func() mock {
 				db, m, err := sqlmock.New()
 				if err != nil {
@@ -52,7 +55,7 @@ func TestSaveUser(t *testing.T) {
 				}
 				m.ExpectBegin()
 				m.ExpectExec("INSERT INTO users").
-					WithArgs("test@examle.com", "test-user", "password").
+					WithArgs("test@example.com", "test-user", "password").
 					WillReturnError(saveUserQueryError)
 				m.ExpectRollback()
 				return mock{db, m}
@@ -74,6 +77,78 @@ func TestSaveUser(t *testing.T) {
 			}
 			if errors.As(got, &tt.want) != tt.hasErr {
 				t.Errorf("err type: %v, expect err type: %v", reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			}
+		})
+	}
+}
+
+func TestFindUserByUserName(t *testing.T) {
+	type mock struct {
+		db      *sql.DB
+		sqlmock sqlmock.Sqlmock
+	}
+	tests := []struct {
+		name     string
+		userName string
+		mock     mock
+		want     *model.User
+		hasErr   bool
+		wantErr  error
+	}{
+		{
+			name:     "found",
+			userName: "test-user",
+			mock: func() mock {
+				db, m, err := sqlmock.New()
+				if err != nil {
+					t.Fatal(err)
+				}
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, email, username, password FROM users WHERE username = $1`)).
+					WithArgs("test-user").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password"}).
+						AddRow("0", "test@example.com", "test-user", "password"),
+					)
+				m.ExpectCommit()
+				return mock{db, m}
+			}(),
+			want:    &model.User{Email: "test@example.com", UserName: "test-user", PasswordHash: "password"},
+			hasErr:  false,
+			wantErr: nil,
+		},
+		{
+			name:     "not found",
+			userName: "test-user",
+			mock: func() mock {
+				db, m, err := sqlmock.New()
+				if err != nil {
+					t.Fatal(err)
+				}
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, email, username, password FROM users WHERE username = $1`)).
+					WithArgs("test-user").
+					WillReturnRows(sqlmock.NewRows([]string{}))
+				m.ExpectCommit()
+				return mock{db, m}
+			}(),
+			want:    &model.User{},
+			hasErr:  false,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := tt.mock.db
+			userRepository, err := NewUserRepository(db)
+			if err != nil {
+				t.Error(err)
+			}
+			got, err := userRepository.FindUserByUserName(context.Background(), tt.userName)
+			if errors.As(err, &tt.wantErr) {
+				t.Errorf("err type: %v, expect err type: %v", reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			}
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(*got, "PasswordHash", "CreatedAt", "UpdatedAt")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})
 	}

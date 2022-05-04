@@ -10,6 +10,7 @@ import (
 
 type UserRepositorier interface {
 	SaveUser(context.Context, *model.User) error
+	FindUserByUserName(context.Context, string) (*model.User, error)
 }
 
 type UserRepository struct {
@@ -52,4 +53,38 @@ func (ur *UserRepository) SaveUser(ctx context.Context, user *model.User) (err e
 		return &SaveUserQueryError{User: user, Message: fmt.Sprintf("userrepository.SaveUser err: %s", err), Err: err}
 	}
 	return nil
+}
+
+func (ur *UserRepository) FindUserByUserName(ctx context.Context, userName string) (_ *model.User, err error) {
+	tx, err := ur.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	query := `
+		SELECT id, email, username, password FROM users WHERE username = $1
+	`
+	rows, err := tx.QueryContext(ctx, query, userName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var u model.User
+	for rows.Next() {
+		err = rows.Scan(&u.ID, &u.Email, &u.UserName, &u.PasswordHash)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &u, nil
 }
